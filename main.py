@@ -20,18 +20,14 @@ CYAN = (0,255,255)
 WHITE = (255,255,255)
 
 # Setup a 300x300 pixel display with caption
-window = pg.display.set_mode((800,800))
+window = pg.display.set_mode((1280,720))
 window.fill(BLUE)
 pg.display.set_caption("Pong")
 
-test_surface = pg.Surface((300,300))
+bg = pg.image.load("images/background.png").convert()
 
-class Paddle():
-    def __init__(self, x, y, vertical):
-        self.x = x
-        self.y = y
-        if(vertical == True): self.surface = pg.Surface((80, 20))
-        else: self.surface = pg.Surface((20, 80))
+paddle_surf = pg.image.load("images/paddle.png").convert()
+paddle_rect = paddle_surf.get_rect(midleft = (0, 360))
 
 while True:
     pg.display.update()
@@ -39,8 +35,14 @@ while True:
         if event.type == QUIT:
             pg.quit()
             sys.exit()
-    test_surface.fill(CYAN)
-    window.blit(test_surface, (0,0))
+    window.blit(bg, (0,0))
+
+    mouse_y = pg.mouse.get_pos()[1]
+
+    paddle_rect.midleft = (paddle_rect.x, mouse_y)
+
+    window.blit(paddle_surf, paddle_rect)
+
     
    
     FramePerSec.tick(FPS)
