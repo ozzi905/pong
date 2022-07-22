@@ -2,8 +2,11 @@ import pygame as pg
 import sys
 from pygame.locals import *
 import random, time
+
 playerScore = 0
 aiScore = 0
+
+mode = "menu"
  
 pg.init()
  
@@ -21,12 +24,12 @@ WHITE = (255,255,255)
 
 width = 1280
 height = 720
+ballList = []
 
 window = pg.display.set_mode((width,height))
 window.fill(BLUE)
 pg.display.set_caption("Pong")
 
-ballList = []
 
 def getNearestBall(balls):
     if(balls.count == 0): return
@@ -62,7 +65,7 @@ class Ai(pg.sprite.Sprite):
     def update_pos(self):
         if(len(ballList) > 0):
             self.nearestBall = getNearestBall(ballList)
-            if(abs(self.rect.y - self.nearestBall.rect.y) < 50): pass
+            if(abs(self.rect.y - self.nearestBall.rect.y) < 40): pass
             elif(self.rect.y < self.nearestBall.rect.y): self.rect.y += self.speed
             else: self.rect.y -= self.speed
 
@@ -84,7 +87,7 @@ class Ball(pg.sprite.Sprite):
         self.rect.y += self.vel_y
 
         if(pg.sprite.spritecollide(self, paddle, False)or pg.sprite.spritecollide(self, opponents, False)):
-            self.vel_x = -(self.vel_x + 0.5)
+            self.vel_x = -(self.vel_x*1.1)
             self.rect.x += self.vel_x
 
         elif(self.rect.left >= width):
@@ -111,21 +114,24 @@ class Ball(pg.sprite.Sprite):
 class Ui(pg.sprite.Sprite):
     def __init__(self, type, topleft):
         super().__init__()
+        global mode
         self.type = type
         self.topleft = topleft
-        self.image = pg.image.load(f"images/ui/{type}.png")
+        self.image = pg.image.load(f"images/{mode}/{type}.png")
         self.rect = self.image.get_rect(topleft = topleft)
 
     def test_for_click(self):
         if(pg.mouse.get_pressed(num_buttons=5)[0] and self.rect.collidepoint(pg.mouse.get_pos())):
-            if(self.type == "play"):load()
-            elif(self.type == "menu"): unload()
+            if(self.type == "play_classic"): loadClassic()
+            elif(self.type == "menu"): menu()
             elif(self.type == "resume"): unpause()
             else: pass
 
     def update(self):
         self.test_for_click()
 
+small_font = pg.font.Font(None, 50)
+large_font = pg.font.Font(None, 100)
 
 paddle = pg.sprite.GroupSingle()
 
@@ -135,35 +141,89 @@ balls = pg.sprite.Group()
 
 ui = pg.sprite.Group()
 
-menu_button = Ui("menu", (400, 200))
-resume_buttom = Ui("resume", (400, 275))
-play_button = Ui("play", (600, 300))
+bricks = pg.sprite.Group()
 
 
-bg = pg.image.load("images/classic/background.png").convert()
 
-def load():
-    unpause()
-    ui.empty()
-    pg.display.set_caption("classic mode!")
-    paddle.add(Player())
-    opponents.add(Ai())
+bg = pg.image.load(f"images/menu/background.png").convert()
 
-def unload():
-    pause()
-    pg.display.set_caption("pong")
+
+
+playerScoreRect = pg.rect.Rect(200, 150, 100, 100)
+aiScoreRect = pg.rect.Rect(1000, 150, 100, 100)
+
+
+def emptyScreen():
     paddle.empty()
     opponents.empty()
     balls.empty()
     ballList.clear()
     ui.empty()
-    ui.add(play_button)
+
+def loadClassic():
+    emptyScreen()
+    global active
+    global bg
+    bg = pg.image.load("images/classic/background.png")
+    active = True
+    aiScore = 0
+    playerScore = 0
+    global mode
+    mode = "classic"
+
+    unpause()
+    ui.empty()
+    pg.display.set_caption("classic mode!")
+    paddle.add(Player())
+    opponents.add(Ai())
+    balls.add((Ball(4, 6)))
+
+
+def menu():
+    global mode, active, bg
+    mode = "menu"
+    active = False
+    bg = pg.image.load(f"images/menu/background.png").convert()
+    pause()
+    pg.display.set_caption("pong")
+    emptyScreen()
+    play_classic= Ui("play_classic", (600, 300))
+    ui.add(play_classic)
+
+def lose():
+    global active
+    active = False
+    emptyScreen()
+
+    lose_screen = Ui("lose", (0,0))
+    menu_button = Ui("menu", (400, 200))
+    play_classic= Ui("play_classic", (600, 300))
+
+    ui.add(lose_screen)
+    ui.add(play_classic)
+    ui.add(menu_button)
+
+def win():
+    global active
+    active = False
+    emptyScreen()
+    menu_button = Ui("menu", (400, 200))
+    play_classic= Ui("play_classic", (600, 300))
+    win_screen = Ui("win", (0,0))
+    ui.add(win_screen)
+    ui.add(play_classic)
+    ui.add(menu_button)
 
 def pause():
     global paused
     paused = True
+
+    menu_button = Ui("menu", (400, 200))
+    resume_buttom = Ui("resume", (400, 275))
+
     ui.add(menu_button)
     ui.add(resume_buttom)
+    # PONG LOGO?
 
 def unpause():
     global paused
@@ -171,10 +231,10 @@ def unpause():
     ui.empty()
 
 
-active = True
 paused = False
+active = False
 
-load()
+menu()
 
 while True:
     pg.display.update()
@@ -184,7 +244,7 @@ while True:
             sys.exit()
         elif event.type == pg.KEYUP:
             if(event.key == K_SPACE):
-                balls.add((Ball(4, 8)))
+                pass
             elif(event.key == K_p):
                 pause()
 
@@ -194,6 +254,23 @@ while True:
         paddle.update()
         opponents.update()
         balls.update()
+        if(mode != "menu"):
+            playerScoreText = large_font.render(str(playerScore), False, BLUE)
+            window.blit(playerScoreText, playerScoreRect)
+
+        if(mode == "classic"):
+            aiScoreText = large_font.render(str(aiScore), False, GREEN)
+            window.blit(aiScoreText, aiScoreRect)
+            if(active):
+                if(aiScore == 7):
+                    aiScore = 0
+                    playerScore = 0
+                    lose()
+                elif(playerScore == 7):
+                    aiScore = 0
+                    playerScore = 0
+                    win()
+
 
     ui.update()
         
