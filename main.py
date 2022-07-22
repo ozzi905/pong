@@ -87,6 +87,7 @@ class Ball(pg.sprite.Sprite):
 
         if(paddle.rect.colliderect(self.rect) or ai.rect.colliderect(self.rect)):
             self.vel_x = -(self.vel_x + 0.05)
+            self.rect.x += self.vel_x
 
         elif(self.rect.left >= width):
             paddle.score += 1
@@ -97,8 +98,8 @@ class Ball(pg.sprite.Sprite):
             self.rect.center = (width/2, height/2)
 
         elif(self.rect.bottom >= height or self.rect.top <= 0):
-            self.vel_y = -self.vel_y
-            self.rect.y += self.vel_y
+            self.vel_y = -self.vel_y 
+            self.rect.y += self.vel_y*1.5
 
         elif(self.rect.bottom >= 1000 or self.rect.bottom <= -300): self.rect.center = (width/2, height/2)
 
