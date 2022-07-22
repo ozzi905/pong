@@ -1,7 +1,9 @@
 import pygame as pg
 import sys
 from pygame.locals import *
-import random
+import random, time
+playerScore = 0
+aiScore = 0
  
 # Initialize program
 pg.init()
@@ -23,6 +25,7 @@ WHITE = (255,255,255)
 width = 1280
 height = 720
 
+
 # Setup a 300x300 pixel display with caption
 window = pg.display.set_mode((width,height))
 window.fill(BLUE)
@@ -43,21 +46,22 @@ def getNearestBall(balls):
 class Player(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.surf = pg.image.load("images/paddle.png").convert()
-        self.rect = self.surf.get_rect(midleft = (0, 360))
+        self.image = pg.image.load("images/paddle.png").convert()
+        self.rect = self.image.get_rect(midleft = (0, 360))
         self.score = 0
 
     def update_pos(self):
         mouse_y = pg.mouse.get_pos()[1]
         self.rect.midleft = (self.rect.x, mouse_y)
-
-    def draw(self):
-        window.blit(self.surf, self.rect)
+ 
+    def update(self):
+        self.update_pos()
 
 class Ai(pg.sprite.Sprite):
     def __init__(self):
-        self.surf = pg.image.load("images/enemy_paddle.png").convert()
-        self.rect = self.surf.get_rect(midright = (width, 360))
+        super().__init__()
+        self.image = pg.image.load("images/enemy_paddle.png").convert()
+        self.rect = self.image.get_rect(midright = (width, 360))
         self.score = 0
         self.speed = 13
         if(len(ballList) > 0): self.nearestBall = getNearestBall(ballList)
@@ -65,19 +69,20 @@ class Ai(pg.sprite.Sprite):
     def update_pos(self):
         if(len(ballList) > 0):
             self.nearestBall = getNearestBall(ballList)
-            if(abs(self.rect.y - self.nearestBall.rect.y) < 60): pass
+            if(abs(self.rect.y - self.nearestBall.rect.y) < 50): pass
             elif(self.rect.y < self.nearestBall.rect.y): self.rect.y += self.speed
             else: self.rect.y -= self.speed
-    
-    def draw(self):   
-        window.blit(self.surf, self.rect)
+
+    def update(self):
+        self.update_pos()
     
 class Ball(pg.sprite.Sprite):
     def __init__(self, init_vel_x, init_vel_y):
+        super().__init__()
         self.vel_x = init_vel_x
         self.vel_y = init_vel_y
-        self.surf = pg.image.load("images/ball.png")
-        self.rect = self.surf.get_rect()
+        self.image = pg.image.load("images/ball.png").convert_alpha(window)
+        self.rect = self.image.get_rect()
         self.rect.center = (width/2, height/2)
         ballList.append(self)
 
@@ -85,20 +90,24 @@ class Ball(pg.sprite.Sprite):
         self.rect.x += self.vel_x
         self.rect.y += self.vel_y
 
-        if(paddle.rect.colliderect(self.rect) or ai.rect.colliderect(self.rect)):
-            self.vel_x = -(self.vel_x + 0.05)
+        if(pg.sprite.spritecollide(self, paddle, False)or pg.sprite.spritecollide(self, opponents, False)):
+            self.vel_x = -(self.vel_x + 0.5)
             self.rect.x += self.vel_x
 
         elif(self.rect.left >= width):
-            paddle.score += 1
+            global playerScore
+            playerScore += 1
+            time.sleep(1)
             self.rect.center = (width/2, height/2)
 
         elif(self.rect.right <= 0):
-            ai.score += 1
+            global aiScore
+            aiScore += 1
+            time.sleep(1)
             self.rect.center = (width/2, height/2)
 
         elif(self.rect.bottom >= height or self.rect.top <= 0):
-            self.vel_y = -self.vel_y 
+            self.vel_y = -(self.vel_y + 0.5)
             self.rect.y += self.vel_y*1.5
 
         elif(self.rect.bottom >= 1000 or self.rect.bottom <= -300): self.rect.center = (width/2, height/2)
@@ -106,14 +115,19 @@ class Ball(pg.sprite.Sprite):
         
 
     def draw(self):
-        window.blit(self.surf, self.rect)
+        window.blit(self.image, self.rect)
+
+    def update(self):
+        self.update_pos()
 
 
+paddle = pg.sprite.GroupSingle()
+paddle.add(Player())
 
-paddle = Player()
-#ball0 = Ball(8, 5)
-#ball1 = Ball(4, 2)
-ai = Ai()
+opponents = pg.sprite.Group()
+opponents.add(Ai())
+
+balls = pg.sprite.Group()
 
 while True:
     pg.display.update()
@@ -122,25 +136,16 @@ while True:
             pg.quit()
             sys.exit()
         elif event.type == MOUSEBUTTONUP:
-            ballList.append(Ball(4, 8))
+            balls.add((Ball(4, 8)))
+
     window.blit(bg, (0,0))
 
-    paddle.update_pos()
-    ai.update_pos()
+    paddle.update()
+    opponents.update()
+    balls.update()
     
-    for ball in ballList:
-        ball.update_pos()
-        ball.draw()
-
-    ai.draw()
-    paddle.draw()
-    
-
-#    if(pg.mouse.get_pressed(3)[0]):
-#        ball.rect.center = (width/2, height/2)
-#        print(f"ai: {ai.score}")
-#        print(f"you: {paddle.score}")
-
-
+    paddle.draw(window)
+    opponents.draw(window)
+    balls.draw(window)
 
     FramePerSec.tick(FPS)
