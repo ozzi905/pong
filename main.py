@@ -32,16 +32,17 @@ bg = pg.image.load("images/background.png").convert()
 
 paddle_surf = pg.image.load("images/paddle.png").convert()
 paddle_rect = paddle_surf.get_rect(midleft = (0, 360))
-
-ball_vel_y = 5 
-ball_vel_x = 10
-
-ball_surf = pg.image.load("images/ball.png")
-ball_rect = ball_surf.get_rect()
-ball_rect.center = (width/2, height/2)
+paddle_score = 0
 
 ai_surf = pg.image.load("images/enemy_paddle.png").convert()
 ai_rect = ai_surf.get_rect(midright = (width, 360))
+ai_score = 0
+
+ball_vel_y = 5 
+ball_vel_x = 10
+ball_surf = pg.image.load("images/ball.png")
+ball_rect = ball_surf.get_rect()
+ball_rect.center = (width/2, height/2)
     
 
 while True:
@@ -63,18 +64,28 @@ while True:
     ball_rect.x += ball_vel_x
     ball_rect.y += ball_vel_y
 
-    if(ball_rect.right >= width):
-        ball_vel_x = -ball_vel_x
+    if(ball_rect.left >= width):
+        paddle_score += 1
+        ball_rect.center = (width/2, height/2)
 
-    if(ball_rect.bottom >= height or ball_rect.top <= 0): ball_vel_y = -ball_vel_y
+    elif(ball_rect.right <= 0):
+        ai_score += 1
+        ball_rect.center = (width/2, height/2)
+
+    elif(ball_rect.bottom >= height or ball_rect.top <= 0): ball_vel_y = -ball_vel_y
     
-    if(paddle_rect.colliderect(ball_rect) or ai_rect.colliderect(ball_rect)):
+    elif(paddle_rect.colliderect(ball_rect) or ai_rect.colliderect(ball_rect)):
         ball_vel_x = -ball_vel_x*1.05
 
-    if(pg.mouse.get_pressed(3)[0]): ball_rect.center = (width/2, height/2)
+    elif(pg.mouse.get_pressed(3)[0]):
+        ball_rect.center = (width/2, height/2)
+        print(f"ai: {ai_score}")
+        print(f"you: {paddle_score}")
 
     if(abs(ai_rect.y - ball_rect.y) < 60): pass
     elif(ai_rect.y < ball_rect.y): ai_rect.y += 6
     else: ai_rect.y -= 6
+
+
 
     FramePerSec.tick(FPS)
