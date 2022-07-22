@@ -30,20 +30,89 @@ pg.display.set_caption("Pong")
 
 bg = pg.image.load("images/background.png").convert()
 
-paddle_surf = pg.image.load("images/paddle.png").convert()
-paddle_rect = paddle_surf.get_rect(midleft = (0, 360))
-paddle_score = 0
+ballList = []
 
-ai_surf = pg.image.load("images/enemy_paddle.png").convert()
-ai_rect = ai_surf.get_rect(midright = (width, 360))
-ai_score = 0
+def getNearestBall(balls):
+    if(balls.count == 0): return
+    closestBall = balls[0]
+    for ball in balls:
+        if (ball.rect.x > closestBall.rect.x): closestBall = ball
+    return closestBall
 
-ball_vel_y = 5 
-ball_vel_x = 10
-ball_surf = pg.image.load("images/ball.png")
-ball_rect = ball_surf.get_rect()
-ball_rect.center = (width/2, height/2)
+
+class Player(pg.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.surf = pg.image.load("images/paddle.png").convert()
+        self.rect = self.surf.get_rect(midleft = (0, 360))
+        self.score = 0
+
+    def update_pos(self):
+        mouse_y = pg.mouse.get_pos()[1]
+        self.rect.midleft = (self.rect.x, mouse_y)
+
+    def draw(self):
+        window.blit(self.surf, self.rect)
+
+class Ai(pg.sprite.Sprite):
+    def __init__(self):
+        self.surf = pg.image.load("images/enemy_paddle.png").convert()
+        self.rect = self.surf.get_rect(midright = (width, 360))
+        self.score = 0
+        self.speed = 13
+        if(len(ballList) > 0): self.nearestBall = getNearestBall(ballList)
+
+    def update_pos(self):
+        if(len(ballList) > 0):
+            self.nearestBall = getNearestBall(ballList)
+            if(abs(self.rect.y - self.nearestBall.rect.y) < 60): pass
+            elif(self.rect.y < self.nearestBall.rect.y): self.rect.y += self.speed
+            else: self.rect.y -= self.speed
     
+    def draw(self):   
+        window.blit(self.surf, self.rect)
+    
+class Ball(pg.sprite.Sprite):
+    def __init__(self, init_vel_x, init_vel_y):
+        self.vel_x = init_vel_x
+        self.vel_y = init_vel_y
+        self.surf = pg.image.load("images/ball.png")
+        self.rect = self.surf.get_rect()
+        self.rect.center = (width/2, height/2)
+        ballList.append(self)
+
+    def update_pos(self):
+        self.rect.x += self.vel_x
+        self.rect.y += self.vel_y
+
+        if(paddle.rect.colliderect(self.rect) or ai.rect.colliderect(self.rect)):
+            self.vel_x = -(self.vel_x + 0.05)
+
+        elif(self.rect.left >= width):
+            paddle.score += 1
+            self.rect.center = (width/2, height/2)
+
+        elif(self.rect.right <= 0):
+            ai.score += 1
+            self.rect.center = (width/2, height/2)
+
+        elif(self.rect.bottom >= height or self.rect.top <= 0):
+            self.vel_y = -self.vel_y
+            self.rect.y += self.vel_y
+
+        elif(self.rect.bottom >= 1000 or self.rect.bottom <= -300): self.rect.center = (width/2, height/2)
+
+        
+
+    def draw(self):
+        window.blit(self.surf, self.rect)
+
+
+
+paddle = Player()
+#ball0 = Ball(8, 5)
+#ball1 = Ball(4, 2)
+ai = Ai()
 
 while True:
     pg.display.update()
@@ -51,40 +120,25 @@ while True:
         if event.type == QUIT:
             pg.quit()
             sys.exit()
+        elif event.type == MOUSEBUTTONUP:
+            ballList.append(Ball(4, 8))
     window.blit(bg, (0,0))
 
-    mouse_y = pg.mouse.get_pos()[1]
-
-    paddle_rect.midleft = (paddle_rect.x, mouse_y)
-
-    window.blit(paddle_surf, paddle_rect)
-    window.blit(ai_surf, ai_rect)
-    window.blit(ball_surf, ball_rect)
-
-    ball_rect.x += ball_vel_x
-    ball_rect.y += ball_vel_y
-
-    if(ball_rect.left >= width):
-        paddle_score += 1
-        ball_rect.center = (width/2, height/2)
-
-    elif(ball_rect.right <= 0):
-        ai_score += 1
-        ball_rect.center = (width/2, height/2)
-
-    elif(ball_rect.bottom >= height or ball_rect.top <= 0): ball_vel_y = -ball_vel_y
+    paddle.update_pos()
+    ai.update_pos()
     
-    elif(paddle_rect.colliderect(ball_rect) or ai_rect.colliderect(ball_rect)):
-        ball_vel_x = -ball_vel_x*1.05
+    for ball in ballList:
+        ball.update_pos()
+        ball.draw()
 
-    elif(pg.mouse.get_pressed(3)[0]):
-        ball_rect.center = (width/2, height/2)
-        print(f"ai: {ai_score}")
-        print(f"you: {paddle_score}")
+    ai.draw()
+    paddle.draw()
+    
 
-    if(abs(ai_rect.y - ball_rect.y) < 60): pass
-    elif(ai_rect.y < ball_rect.y): ai_rect.y += 6
-    else: ai_rect.y -= 6
+#    if(pg.mouse.get_pressed(3)[0]):
+#        ball.rect.center = (width/2, height/2)
+#        print(f"ai: {ai.score}")
+#        print(f"you: {paddle.score}")
 
 
 
