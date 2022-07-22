@@ -5,14 +5,11 @@ import random, time
 playerScore = 0
 aiScore = 0
  
-# Initialize program
 pg.init()
  
-# Assign FPS a value
 FPS = 60
 FramePerSec = pg.time.Clock()
  
-# Setting up color objects
 BLACK = (0,0,0)
 RED = (255,0,0)
 GREEN = (0,255,0)
@@ -25,13 +22,9 @@ WHITE = (255,255,255)
 width = 1280
 height = 720
 
-
-# Setup a 300x300 pixel display with caption
 window = pg.display.set_mode((width,height))
 window.fill(BLUE)
 pg.display.set_caption("Pong")
-
-bg = pg.image.load("images/background.png").convert()
 
 ballList = []
 
@@ -46,7 +39,7 @@ def getNearestBall(balls):
 class Player(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pg.image.load("images/paddle.png").convert()
+        self.image = pg.image.load("images/classic/paddle.png").convert()
         self.rect = self.image.get_rect(midleft = (0, 360))
         self.score = 0
 
@@ -60,7 +53,7 @@ class Player(pg.sprite.Sprite):
 class Ai(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pg.image.load("images/enemy_paddle.png").convert()
+        self.image = pg.image.load("images/classic/enemy_paddle.png").convert()
         self.rect = self.image.get_rect(midright = (width, 360))
         self.score = 0
         self.speed = 13
@@ -81,7 +74,7 @@ class Ball(pg.sprite.Sprite):
         super().__init__()
         self.vel_x = init_vel_x
         self.vel_y = init_vel_y
-        self.image = pg.image.load("images/ball.png").convert_alpha(window)
+        self.image = pg.image.load("images/classic/ball.png").convert_alpha(window)
         self.rect = self.image.get_rect()
         self.rect.center = (width/2, height/2)
         ballList.append(self)
@@ -112,22 +105,76 @@ class Ball(pg.sprite.Sprite):
 
         elif(self.rect.bottom >= 1000 or self.rect.bottom <= -300): self.rect.center = (width/2, height/2)
 
-        
-
-    def draw(self):
-        window.blit(self.image, self.rect)
-
     def update(self):
         self.update_pos()
 
+class Ui(pg.sprite.Sprite):
+    def __init__(self, type, topleft):
+        super().__init__()
+        self.type = type
+        self.topleft = topleft
+        self.image = pg.image.load(f"images/ui/{type}.png")
+        self.rect = self.image.get_rect(topleft = topleft)
+
+    def test_for_click(self):
+        if(pg.mouse.get_pressed(num_buttons=5)[0] and self.rect.collidepoint(pg.mouse.get_pos())):
+            if(self.type == "play"):load()
+            elif(self.type == "menu"): unload()
+            elif(self.type == "resume"): unpause()
+            else: pass
+
+    def update(self):
+        self.test_for_click()
+
 
 paddle = pg.sprite.GroupSingle()
-paddle.add(Player())
 
 opponents = pg.sprite.Group()
-opponents.add(Ai())
 
 balls = pg.sprite.Group()
+
+ui = pg.sprite.Group()
+
+menu_button = Ui("menu", (400, 200))
+resume_buttom = Ui("resume", (400, 275))
+play_button = Ui("play", (600, 300))
+
+
+bg = pg.image.load("images/classic/background.png").convert()
+
+def load():
+    unpause()
+    ui.empty()
+    pg.display.set_caption("classic mode!")
+    paddle.add(Player())
+    opponents.add(Ai())
+
+def unload():
+    pause()
+    pg.display.set_caption("pong")
+    paddle.empty()
+    opponents.empty()
+    balls.empty()
+    ballList.clear()
+    ui.empty()
+    ui.add(play_button)
+
+def pause():
+    global paused
+    paused = True
+    ui.add(menu_button)
+    ui.add(resume_buttom)
+
+def unpause():
+    global paused
+    paused = False
+    ui.empty()
+
+
+active = True
+paused = False
+
+load()
 
 while True:
     pg.display.update()
@@ -135,17 +182,24 @@ while True:
         if event.type == QUIT:
             pg.quit()
             sys.exit()
-        elif event.type == MOUSEBUTTONUP:
-            balls.add((Ball(4, 8)))
+        elif event.type == pg.KEYUP:
+            if(event.key == K_SPACE):
+                balls.add((Ball(4, 8)))
+            elif(event.key == K_p):
+                pause()
 
     window.blit(bg, (0,0))
 
-    paddle.update()
-    opponents.update()
-    balls.update()
-    
+    if(not paused):
+        paddle.update()
+        opponents.update()
+        balls.update()
+
+    ui.update()
+        
     paddle.draw(window)
     opponents.draw(window)
     balls.draw(window)
+    ui.draw(window)
 
     FramePerSec.tick(FPS)
