@@ -3,13 +3,7 @@ import sys
 from pygame.locals import *
 import random, time
 
-playerScore = 0
-aiScore = 0
-
-mode = "menu"
- 
-pg.init()
- 
+pg.init() 
 FPS = 60
 FramePerSec = pg.time.Clock()
  
@@ -22,6 +16,9 @@ MAGENTA = (255,0,255)
 CYAN = (0,255,255)
 WHITE = (255,255,255)
 
+playerScore = 0
+aiScore = 0
+mode = "menu"
 width = 1280
 height = 720
 ballList = []
@@ -77,7 +74,7 @@ class Ball(pg.sprite.Sprite):
         super().__init__()
         self.vel_x = init_vel_x
         self.vel_y = init_vel_y
-        self.image = pg.image.load("images/classic/ball.png").convert_alpha(window)
+        self.image = pg.image.load("images/classic/ball.png")
         self.rect = self.image.get_rect()
         self.rect.center = (width/2, height/2)
         ballList.append(self)
@@ -136,18 +133,11 @@ large_font = pg.font.Font(None, 100)
 paddle = pg.sprite.GroupSingle()
 
 opponents = pg.sprite.Group()
-
 balls = pg.sprite.Group()
-
 ui = pg.sprite.Group()
-
 bricks = pg.sprite.Group()
 
-
-
 bg = pg.image.load(f"images/menu/background.png").convert()
-
-
 
 playerScoreRect = pg.rect.Rect(200, 150, 100, 100)
 aiScoreRect = pg.rect.Rect(1000, 150, 100, 100)
@@ -159,16 +149,14 @@ def emptyScreen():
     balls.empty()
     ballList.clear()
     ui.empty()
+    bricks.empty()
 
 def loadClassic():
+    global bg, mode
     emptyScreen()
-    global active
-    global bg
     bg = pg.image.load("images/classic/background.png")
-    active = True
     aiScore = 0
     playerScore = 0
-    global mode
     mode = "classic"
 
     unpause()
@@ -180,9 +168,8 @@ def loadClassic():
 
 
 def menu():
-    global mode, active, bg
+    global mode, bg
     mode = "menu"
-    active = False
     bg = pg.image.load(f"images/menu/background.png").convert()
     pause()
     pg.display.set_caption("pong")
@@ -191,8 +178,6 @@ def menu():
     ui.add(play_classic)
 
 def lose():
-    global active
-    active = False
     emptyScreen()
 
     lose_screen = Ui("lose", (0,0))
@@ -204,8 +189,6 @@ def lose():
     ui.add(menu_button)
 
 def win():
-    global active
-    active = False
     emptyScreen()
     menu_button = Ui("menu", (400, 200))
     play_classic= Ui("play_classic", (600, 300))
@@ -232,7 +215,6 @@ def unpause():
 
 
 paused = False
-active = False
 
 menu()
 
@@ -261,15 +243,15 @@ while True:
         if(mode == "classic"):
             aiScoreText = large_font.render(str(aiScore), False, GREEN)
             window.blit(aiScoreText, aiScoreRect)
-            if(active):
-                if(aiScore == 7):
-                    aiScore = 0
-                    playerScore = 0
-                    lose()
-                elif(playerScore == 7):
-                    aiScore = 0
-                    playerScore = 0
-                    win()
+
+            if(aiScore == 7):
+                aiScore = 0
+                playerScore = 0
+                lose()
+            elif(playerScore == 7):
+                aiScore = 0
+                playerScore = 0
+                win()
 
 
     ui.update()
