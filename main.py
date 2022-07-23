@@ -3,6 +3,8 @@ import sys
 from pygame.locals import *
 import random, time
 
+# HELLO THIS IS A COMMENT
+
 playerScore = 0
 aiScore = 0
 
