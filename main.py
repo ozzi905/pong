@@ -3,7 +3,19 @@ import sys
 from pygame.locals import *
 import random, time
 
+<<<<<<< HEAD
 pg.init() 
+=======
+# HELLO THIS IS A COMMENT
+
+playerScore = 0
+aiScore = 0
+
+mode = "menu"
+ 
+pg.init()
+ 
+>>>>>>> b9103e71fdbfb9e5a4ef97af3e430107704995c4
 FPS = 60
 FramePerSec = pg.time.Clock()
  
