@@ -3,9 +3,6 @@ import sys
 from pygame.locals import *
 import random, time
 
-<<<<<<< HEAD
-pg.init() 
-=======
 # HELLO THIS IS A COMMENT
 
 playerScore = 0
@@ -15,7 +12,6 @@ mode = "menu"
  
 pg.init()
  
->>>>>>> b9103e71fdbfb9e5a4ef97af3e430107704995c4
 FPS = 60
 FramePerSec = pg.time.Clock()
  
@@ -49,10 +45,11 @@ def getNearestBall(balls):
 
 
 class Player(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, left = True):
         super().__init__()
         self.image = pg.image.load("images/classic/paddle.png").convert()
-        self.rect = self.image.get_rect(midleft = (0, 360))
+        if(left): self.rect = self.image.get_rect(midleft = (0, 360))
+        else: self.rect = self.image.get_rect(midright = (width, 360))
         self.score = 0
 
     def update_pos(self):
@@ -84,6 +81,7 @@ class Ai(pg.sprite.Sprite):
 class Ball(pg.sprite.Sprite):
     def __init__(self, init_vel_x, init_vel_y):
         super().__init__()
+        self.init_vel_x = init_vel_x
         self.vel_x = init_vel_x
         self.vel_y = init_vel_y
         self.image = pg.image.load("images/classic/ball.png")
@@ -92,6 +90,7 @@ class Ball(pg.sprite.Sprite):
         ballList.append(self)
 
     def update_pos(self):
+        global mode
         self.rect.x += self.vel_x
         self.rect.y += self.vel_y
 
@@ -101,15 +100,23 @@ class Ball(pg.sprite.Sprite):
 
         elif(self.rect.left >= width):
             global playerScore
-            playerScore += 1
-            time.sleep(1)
-            self.rect.center = (width/2, height/2)
+            if(mode == "classic"):
+                playerScore += 1
+                time.sleep(1)
+                self.vel_x = self.init_vel_x
+                self.rect.center = (width/2, height/2)
+            elif(mode == "single"):
+                 lose()
 
         elif(self.rect.right <= 0):
             global aiScore
-            aiScore += 1
-            time.sleep(1)
-            self.rect.center = (width/2, height/2)
+            if(mode == "classic"):
+                aiScore += 1
+                time.sleep(1)
+                self.vel_x = self.init_vel_x
+                self.rect.center = (width/2, height/2)
+            elif(mode == "single"):
+                lose()
 
         elif(self.rect.bottom >= height or self.rect.top <= 0):
             self.vel_y = -(self.vel_y + 0.5)
@@ -132,6 +139,7 @@ class Ui(pg.sprite.Sprite):
     def test_for_click(self):
         if(pg.mouse.get_pressed(num_buttons=5)[0] and self.rect.collidepoint(pg.mouse.get_pos())):
             if(self.type == "play_classic"): loadClassic()
+            elif(self.type == "play_single"): loadSingle()
             elif(self.type == "menu"): menu()
             elif(self.type == "resume"): unpause()
             else: pass
@@ -140,19 +148,20 @@ class Ui(pg.sprite.Sprite):
         self.test_for_click()
 
 small_font = pg.font.Font(None, 50)
-large_font = pg.font.Font(None, 100)
+large_font = pg.font.Font(None, 400)
 
-paddle = pg.sprite.GroupSingle()
+paddle = pg.sprite.Group()
 
 opponents = pg.sprite.Group()
 balls = pg.sprite.Group()
 ui = pg.sprite.Group()
 bricks = pg.sprite.Group()
+powers = pg.sprite.Group()
 
 bg = pg.image.load(f"images/menu/background.png").convert()
 
-playerScoreRect = pg.rect.Rect(200, 150, 100, 100)
-aiScoreRect = pg.rect.Rect(1000, 150, 100, 100)
+playerScoreRect = pg.rect.Rect(200, 225, 100, 100)
+aiScoreRect = pg.rect.Rect(950, 225, 100, 100)
 
 
 def emptyScreen():
@@ -178,6 +187,20 @@ def loadClassic():
     opponents.add(Ai())
     balls.add((Ball(4, 6)))
 
+def loadSingle():
+    global bg, mode
+    mode = "single"
+    emptyScreen()
+    bg = pg.image.load(f"images/{mode}/background.png")
+    pg.display.set_caption("single mode!")
+    global playerScoreRect
+    playerScoreRect = pg.rect.Rect(560, 225, 100, 100)
+    paddle.add(Player())
+    paddle.add(Player(left = False))
+    balls.add(Ball(4, 6))
+    unpause()
+
+
 
 def menu():
     global mode, bg
@@ -187,17 +210,20 @@ def menu():
     pg.display.set_caption("pong")
     emptyScreen()
     play_classic= Ui("play_classic", (600, 300))
+    play_single = Ui("play_single", (400, 300))
     ui.add(play_classic)
+    ui.add(play_single)
 
 def lose():
+    global mode
     emptyScreen()
 
     lose_screen = Ui("lose", (0,0))
     menu_button = Ui("menu", (400, 200))
-    play_classic= Ui("play_classic", (600, 300))
+    play = Ui(f"play_{mode}", (600, 300))
 
     ui.add(lose_screen)
-    ui.add(play_classic)
+    ui.add(play)
     ui.add(menu_button)
 
 def win():
@@ -248,6 +274,7 @@ while True:
         paddle.update()
         opponents.update()
         balls.update()
+
         if(mode != "menu"):
             playerScoreText = large_font.render(str(playerScore), False, BLUE)
             window.blit(playerScoreText, playerScoreRect)
@@ -265,6 +292,8 @@ while True:
                 playerScore = 0
                 win()
 
+        if(mode == "single"):
+            pass
 
     ui.update()
         
